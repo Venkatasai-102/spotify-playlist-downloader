@@ -1,16 +1,23 @@
+# imports
 from dotenv import load_dotenv
 import os
 import base64
 from requests import get, post
 import json
 from googleapiclient.discovery import build
+from pytube import YouTube
 
 load_dotenv()
 
+################################################################
+# ids and keys
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
 client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 user_id = os.getenv('SPOTIFY_USER_ID')
+google_api_key = os.getenv('GOOGLE_API_KEY')
 
+################################################################
+# helper functions
 def get_token():
     auth_string = f'{client_id}:{client_secret}'
     auth_string = auth_string.encode('utf-8')
@@ -55,6 +62,7 @@ token = get_token()
 playlists = get_playlists(token)
 
 ################################################################
+# getting the playlist items from spotify
 playlist_name = input('Enter playlist name: ')
 for playlist in playlists:
     if playlist['name'] == playlist_name:
@@ -62,18 +70,43 @@ for playlist in playlists:
         break
 playlist_items = get_playlist_items(token, id)
 
-file_name = input('Enter file name: ')
-f = open(f"{file_name}.txt", "w")
+song_names = []
+
 for item in playlist_items:
     if item['track']['name'] != "":
-        f.write(f"{item['track']['name']}\n")
-
-f.close()
+        artists = ""
+        for i, artist in enumerate(item['track']['artists']):
+            if i == len(item['track']['artists']) - 1:
+                artists += artist['name']
+            else:
+                artists += artist['name'] + ", "
+        song_names.append(f"{item['track']['name']} - {artists}")
 
 ################################################################
-# https://www.youtube.com/watch?v=th5_9woFJmk
-google_api_key = os.getenv('GOOGLE_API_KEY')
-
+# getting urls from youtube
 youtube = build('youtube', 'v3', developerKey=google_api_key)
+urls = []
+for song_name in song_names:
+    if not song_name:
+        break
+    song_name += ' lyrical song'
+    request = youtube.search().list(
+        part='snippet',
+        q=song_name,
+        maxResults=1,
+    )
 
-load_dotenv
+    response = request.execute()
+
+    video_url = 'https://www.youtube.com/watch?v=' + response['items'][0]['id']['videoId']
+    # video_title = response['items'][0]['snippet']['title']
+    urls.append(video_url)
+
+################################################################
+# saving as audio file in the given folder
+folder_name = input('Enter folder name: ')
+for url in urls:
+    yt = YouTube(url)
+    out_path = yt.streams.filter(only_audio=True).first().download(output_path=f'./{folder_name}')
+    new_name = os.path.splitext(out_path)
+    os.rename(out_path, f"{new_name[0]}.mp3")
