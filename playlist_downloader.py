@@ -3,6 +3,7 @@ import os
 import base64
 from requests import get, post
 import json
+from googleapiclient.discovery import build
 
 load_dotenv()
 
@@ -69,3 +70,10 @@ for item in playlist_items:
 
 f.close()
 
+################################################################
+# https://www.youtube.com/watch?v=th5_9woFJmk
+google_api_key = os.getenv('GOOGLE_API_KEY')
+
+youtube = build('youtube', 'v3', developerKey=google_api_key)
+
+load_dotenv

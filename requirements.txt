@@ -1,3 +1,5 @@
 python-dotenv
 requests
 simplejson
+pprintpp
+google-api-python-client
