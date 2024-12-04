@@ -5,7 +5,8 @@ import base64
 from requests import get, post
 import json
 from googleapiclient.discovery import build
-from pytube import YouTube
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
 
 load_dotenv()
 
@@ -106,7 +107,11 @@ for song_name in song_names:
 # saving as audio file in the given folder
 folder_name = input('Enter folder name: ')
 for url in urls:
-    yt = YouTube(url)
-    out_path = yt.streams.filter(only_audio=True).first().download(output_path=f'./{folder_name}')
-    new_name = os.path.splitext(out_path)
-    os.rename(out_path, f"{new_name[0]}.mp3")
+    try:
+        print(f"Downloading {url}...")
+        yt = YouTube(url, on_progress_callback=on_progress)
+        out_path = yt.streams.get_audio_only().download(output_path=f'./{folder_name}')
+        new_name = os.path.splitext(out_path)
+        os.rename(out_path, f"{new_name[0]}.mp3")
+    except:
+        print(f"Failed to download {url}")
